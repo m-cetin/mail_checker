@@ -45,7 +45,3 @@ There are multiple behaviors of mail servers that enable the vulnerability:
   info](https://www.postfix.org/smtp-smuggling.html), [CVE-2023-51764](https://nvd.nist.gov/vuln/detail/CVE-2023-51764)
 * [Exim bug report](https://bugs.exim.org/show_bug.cgi?id=3063), [CVE-2023-51766](https://nvd.nist.gov/vuln/detail/CVE-2023-51766)
 * [CVE-2023-51765 (SMTP Smuggling in Sendmail)](https://nvd.nist.gov/vuln/detail/CVE-2023-51765)
-
-# author
-
-[Hanno Böck](https://hboeck.de/)
