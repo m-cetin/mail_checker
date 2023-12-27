@@ -1,4 +1,4 @@
-# Mailchecker - Einfache Überprüfung von SMTP-Schwachstellen in Mail-Servern
+# Mailchecker - Einfache Überprüfung von Mail-Servern
 
 Ein Skript zur Analyse von E-Mail-Servern für SMTP-Smuggling-Schwachstellen.
 
