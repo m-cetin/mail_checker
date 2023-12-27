@@ -8,124 +8,113 @@ import socket
 import ssl
 import sys
 
+def receive_data():
+    received_data = sock.recv(4096)
+    print(f"\033[1;34mEMPFANGEN:\033[0;36m {received_data.decode()}\033[0m")
+    return received_data.decode()
 
-def recv():
-    ret = sock.recv(4096)
-    print(f"\033[1;34mRECV:\033[0;36m {ret.decode()}\033[0m")
-    return ret.decode()
-
-
-def send(msg):
-    print(f"\033[1;34mSEND:\033[0;33m {msg}\033[0m")
-    sock.send(f"{msg}\r\n".encode())
-
+def send_data(message):
+    print(f"\033[1;34mSENDEN:\033[0;33m {message}\033[0m")
+    sock.send(f"{message}\r\n".encode())
 
 def send_mail_header():
-    maildate = email.utils.format_datetime(datetime.datetime.now())
-    msgid = email.utils.make_msgid(domain=ehlo)
+    mail_date = email.utils.format_datetime(datetime.datetime.now())
+    msg_id = email.utils.make_msgid(domain=ehlo)
 
-    recv()
-    send(f"EHLO {ehlo}")
-    recv()
+    receive_data()
+    send_data(f"EHLO {ehlo}")
+    receive_data()
 
     if args.user and args.password:
-        authplain = f"\x00{args.user}\x00{args.password}"
-        b64 = base64.b64encode(authplain.encode()).decode()
-        send(f"AUTH PLAIN {b64}")
-        if not recv().startswith("2"):
-            sys.exit("Authentication failed")
+        auth_plain = f"\x00{args.user}\x00{args.password}"
+        b64 = base64.b64encode(auth_plain.encode()).decode()
+        send_data(f"AUTH PLAIN {b64}")
+        if not receive_data().startswith("2"):
+            sys.exit("Authentifizierung fehlgeschlagen")
 
-    send(f"MAIL FROM:<{args.mailfrom}>")
-    r = recv()
-    if not r.startswith("2"):
-        sys.exit("Did not accept MAIL FROM")
+    send_data(f"MAIL FROM:<{args.mailfrom}>")
+    response = receive_data()
+    if not response.startswith("2"):
+        sys.exit("Ungültige Absenderadresse")
 
-    send(f"RCPT TO:<{args.to}>")
-    r = recv()
-    if not r.startswith("2"):
-        sys.exit("Did not accept RCPT TO")
+    send_data(f"RCPT TO:<{args.to}>")
+    response = receive_data()
+    if not response.startswith("2"):
+        sys.exit("Ungültige Empfängeradresse")
 
-    send("DATA")
-    recv()
-    send(f"From: {args.mailfrom}")
-    send(f"To: {args.to}")
-    send("Subject: Hello World")
-    send(f"Date: {maildate}")
-    send(f"Message-ID: {msgid}")
-    send("")
+    send_data("DATA")
+    receive_data()
+    send_data(f"From: {args.mailfrom}")
+    send_data(f"To: {args.to}")
+    send_data("Subject: Hallo Welt")
+    send_data(f"Date: {mail_date}")
+    send_data(f"Message-ID: {msg_id}")
+    send_data("")
 
-
-def test_badend(badend_value):
+def test_bad_end(bad_end_value):
     send_mail_header()
-    send(f"This is a test mail with an {repr(badend_value)} ending.")
-    sock.send(badend_value.encode())
+    send_data(f"Dies ist eine Testnachricht mit einem {repr(bad_end_value)} Abschluss.")
+    sock.send(bad_end_value.encode())
     try:
-        ret = recv()
+        response = receive_data()
     except TimeoutError:
-        print(f"Received timeout after 5 seconds when sending {repr(badend_value)}")
-        print("Finishing mail with <CR><LF>.<CR><LF>")
-        send(f"This is after a bad mail {repr(badend_value)} ending.")
+        print(f"Timeout nach 5 Sekunden beim Senden von {repr(bad_end_value)}")
+        print("Abschließen der Nachricht mit <CR><LF>.<CR><LF>")
+        send_data(f"Dies ist nach einer fehlerhaften Nachricht {repr(bad_end_value)} Abschluss.")
         sock.send("\r\n.\r\n".encode())
-        if recv().startswith("250 "):
-            print(f"Successfully sent a mail with {repr(badend_value)} in it,")
-            print("but not accepted as a mail end.")
-            print("This probablby should've been rejected.")
-            print("You should analyze the result on the receiving side.")
+        if receive_data().startswith("250 "):
+            print(f"Erfolgreich eine Nachricht mit {repr(bad_end_value)} gesendet,")
+            print("aber nicht als Nachrichtenende akzeptiert.")
+            print("Dies sollte wahrscheinlich abgelehnt werden.")
+            print("Die Ergebnisse sollten auf der Empfängerseite analysiert werden.")
         return
-    if ret.startswith("250 "):
-        print(f"It appears {repr(badend_value)} was accepted (bad!)")
+    if response.startswith("250 "):
+        print(f"Es scheint, als ob {repr(bad_end_value)} akzeptiert wurde (schlecht!)")
     else:
-        print(
-            f"It appears server did not accept {repr(badend_value)}, that's probably good."
-        )
-
+        print(f"Es scheint, als ob der Server {repr(bad_end_value)} nicht akzeptiert hat, das ist wahrscheinlich gut.")
 
 def test_pipelining():
-    maildate = email.utils.format_datetime(datetime.datetime.now())
-    msgid = email.utils.make_msgid(domain=ehlo)
+    mail_date = email.utils.format_datetime(datetime.datetime.now())
+    msg_id = email.utils.make_msgid(domain=ehlo)
 
     send_mail_header()
-    send("This is mail 1/2 to test pipelining")
+    send_data("Dies ist E-Mail 1/2 zum Testen von Pipelining")
     sock.send("\r\n.\r\n".encode())
-    send(f"MAIL FROM:<{args.mailfrom}>")
-    send(f"RCPT TO:<{args.to}>")
-    send("DATA")
-    send(f"From: {args.mailfrom}")
-    send(f"To: {args.to}")
-    send("Subject: Hello World 2")
-    send(f"Date: {maildate}")
-    send(f"Message-ID: {msgid}")
-    send("")
-    send("This is mail 2/2 to test pipelining")
+    send_data(f"MAIL FROM:<{args.mailfrom}>")
+    send_data(f"RCPT TO:<{args.to}>")
+    send_data("DATA")
+    send_data(f"From: {args.mailfrom}")
+    send_data(f"To: {args.to}")
+    send_data("Subject: Hallo Welt 2")
+    send_data(f"Date: {mail_date}")
+    send_data(f"Message-ID: {msg_id}")
+    send_data("")
+    send_data("Dies ist E-Mail 2/2 zum Testen von Pipelining")
     sock.send("\r\n.\r\n".encode())
-    r = recv()
+    response = receive_data()
 
-    lines = r.splitlines()
-    xline = lines[-2] if len(lines) >= 2 else ""
-    if lines[-1].startswith("5") or xline.startswith("5"):
-        print(
-            "Server rejects bad protocol synchronization (if postfix: mitigation enabled)"
-        )
+    lines = response.splitlines()
+    x_line = lines[-2] if len(lines) >= 2 else ""
+    if lines[-1].startswith("5") or x_line.startswith("5"):
+        print("Server lehnt schlechte Protokollsynchronisation ab (falls Postfix: Abwehr aktiviert)")
     elif lines[-1].startswith("2"):
-        print("Server accepts bad protocol synchronization.")
+        print("Server akzeptiert schlechte Protokollsynchronisation.")
         if args.user:
-            print("Note: The postfix mitigation is only enabled on unauthenticated")
-            print("connections, you tested with an authenticated connection.")
+            print("Hinweis: Die Postfix-Abwehr ist nur aktiviert bei unauthentifizierten Verbindungen, Sie haben mit einer authentifizierten Verbindung getestet.")
     else:
-        print("Unsure how to interpret answer")
+        print("Unsicher, wie die Antwort interpretiert werden soll")
 
-
-ap = argparse.ArgumentParser()
-ap.add_argument("host", nargs="?")
-ap.add_argument("-f", "--mailfrom", default="alice@example.org")
-ap.add_argument("-t", "--to", default="bob@example.org")
-ap.add_argument("-e", "--ehlo", help="Takes local part of mailfrom if not passed")
-ap.add_argument("-u", "--user", help="Authenticate with username")
-ap.add_argument("-p", "--password", help="Authenticate with password")
-ap.add_argument("-s", "--tls", action="store_true", help="TLS/SMTPS (port 465)")
-ap.add_argument("--port", type=int, help="Custom port")
-ap.add_argument("-c", "--test", default="lflf", help="Test to run")
-ap.add_argument("--list-tests", action="store_true")
+ap = argparse.ArgumentParser(description="SMTP-Testskript für verschiedene Testszenarien.")
+ap.add_argument("host", nargs="?", help="Der Hostname oder die IP-Adresse des SMTP-Servers.")
+ap.add_argument("-f", "--mailfrom", default="alice@example.org", help="Die Absender-E-Mail-Adresse.")
+ap.add_argument("-t", "--to", default="bob@example.org", help="Die Empfänger-E-Mail-Adresse.")
+ap.add_argument("-e", "--ehlo", help="Der lokale Teil von mailfrom, falls nicht übergeben.")
+ap.add_argument("-u", "--user", help="Der Benutzername für die Authentifizierung.")
+ap.add_argument("-p", "--password", help="Das Passwort für die Authentifizierung.")
+ap.add_argument("-s", "--tls", action="store_true", help="Verwenden von TLS/SMTPS (Port 465).")
+ap.add_argument("--port", type=int, help="Benutzerdefinierter Port für die Verbindung.")
+ap.add_argument("-c", "--test", default="lflf", help="Der zu testende Fall (Option).")
+ap.add_argument("--list-tests", action="store_true", help="Listet verfügbare Tests auf und beendet das Skript.")
 args = ap.parse_args()
 
 tests = {
@@ -135,15 +124,15 @@ tests = {
     "lfcr": "\n.\r",
     "nullbefore": "\r\n\x00.\r\n",
     "nullafter": "\r\n\x00.\r\n",
-    "pipelining": "Test whether server supports pipelining (Postfix mitigation)",
+    "pipelining": "Testen, ob der Server Pipelining unterstützt (Postfix-Abwehr).",
 }
 
 if args.list_tests:
     for k, v in tests.items():
         if k == "pipelining":
-            print(f'"{k}:": {v}')
+            print(f'"{k}": {v}')
         else:
-            print(f'"{k}:": Send malformed {repr(v)} end of DATA symbol')
+            print(f'"{k}": Sendet fehlerhaftes {repr(v)} als Ende des DATA-Symbols.')
     sys.exit(0)
 
 if not args.host:
@@ -151,11 +140,10 @@ if not args.host:
     sys.exit(0)
 
 if args.test not in tests:
-    sys.exit("Invalid test")
-
+    sys.exit("Ungültiger Testfall")
 
 if bool(args.user) != bool(args.password):
-    sys.exit("Need both user and password for authentication")
+    sys.exit("Beide Benutzername und Passwort sind für die Authentifizierung erforderlich.")
 
 print(args)
 
@@ -169,7 +157,6 @@ if not args.ehlo:
     ehlo = args.mailfrom.split("@")[-1]
 else:
     ehlo = args.ehlo
-
 
 psock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 psock.settimeout(5)
@@ -185,4 +172,4 @@ else:
 if args.test == "pipelining":
     test_pipelining()
 else:
-    test_badend(tests[args.test])
+    test_bad_end(tests[args.test])
