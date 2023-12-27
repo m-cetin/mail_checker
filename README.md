@@ -11,30 +11,30 @@ Standardmäßig sendet das Skript eine Test-E-Mail mit einem fehlerhaften Endzei
 Zum Testen der Postfix-Abhilfemaßnahme steht jetzt ein Pipelining-Test zur Verfügung.
 
 # Überprüfungen
-## Standardtest
+### Standardtest
 ```
 ./mail_checker.py mail-server.de
 ``` 
-## Benutzerdefinierter Port sowie TLS
+### Benutzerdefinierter Port sowie TLS
 ```
 ./mail_checker.py mail-server.de -s --port 587
 ```
-## Pipelining-Unterstützung überprüfen (Fähigkeit des SMTP-Servers, mehrere Befehle gleichzeitig zu versenden ohne auf eine Bestätigung zu warten)
+### Pipelining-Unterstützung überprüfen (Fähigkeit des SMTP-Servers, mehrere Befehle gleichzeitig zu versenden ohne auf eine Bestätigung zu warten)
 ```
 ./mail_checker.py mail-server.de --test pipelining
 ```
 
-## Benutzerdefinierte Absender- und Empfängeradressen mit Authentifizierung:
+### Benutzerdefinierte Absender- und Empfängeradressen mit Authentifizierung:
 ```
 ./mail_checker.py -f hans@handwerker-technik.de -t administration@handwerker-technik.de -u meinbenutzername -p meinkennwort mailserver.de
 ```
 
-## Liste verfügbarer Tests anzeigen
+### Liste verfügbarer Tests anzeigen
 ```
 ./mail_checker.py --list-tests
 ```
 
-## Bestimmte Tests, z.B. CRCR (Carriage Return Carriage Return, SMTP-Server auf unerwünschte Zeichen testen), durchführen
+### Bestimmte Tests, z.B. CRCR (Carriage Return Carriage Return, SMTP-Server auf unerwünschte Zeichen testen), durchführen
 ```
 ./mail_checker.py mailserver.de --test crcr
 ```
